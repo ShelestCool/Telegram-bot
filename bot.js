@@ -4,7 +4,9 @@ const {gameOptions, againOptions} = require('./options')
 const token = '5912123999:AAHaldtubyVLZ39sZ0pEAAdJYxPpofquflw';
 
 const bot = new TelegramApi(token, {polling: true});
+
 const chats = {};
+const notes = [];
 
 const startGame = async (chatId) => {
     await bot.sendMessage(chatId, 'Сейчас я загадаю цифру от 0 до 9, а ты должен её угадать.');
@@ -13,18 +15,27 @@ const startGame = async (chatId) => {
     await bot.sendMessage(chatId, 'Отгадывай', gameOptions);
 }
 
+setInterval(async () => {
+    for (let i = 0; i < notes.length; i++) {
+        const curDate = new Date().getHours() + ':' + new Date().getMinutes();
+        if (notes[i]['time'] === curDate) {
+            await bot.sendMessage(notes[i]['uid'], 'Напоминаю, что вы должны: '+ notes[i]['text'] + ' сейчас.');
+            notes.splice(i, 1);
+        }
+    }
+}, 1000);
+
 const start = () => {
     bot.setMyCommands([
         {command: '/start', description: 'Начальное приветствие'},
         {command: '/info', description: 'Получить информацию о пользователе'},
-        {command: '/game', description: 'Игра, угадай число'}
+        {command: '/game', description: 'Игра, угадай число'},
     ])
 
     bot.on('message', async msg => {
         const text = msg.text;
         const chatId = msg.chat.id;
         const location = msg.location;
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=0aa3d31e641faaefacedb907d85686bf`;
 
         if (text === '/start') {
             await bot.sendSticker(chatId, 'https://tlgrm.eu/_/stickers/ccd/a8d/ccda8d5d-d492-4393-8bb7-e33f77c24907/1.webp');
@@ -40,12 +51,22 @@ const start = () => {
         }
 
         if (location) {
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=0aa3d31e641faaefacedb907d85686bf`;
             const response = await axios.get(url);
             const data = response.data;
-            console.log(response);
             await bot.sendMessage(chatId, `${data.name} (${data.sys.country}): ${Math.round(data.main.temp / 100)} C°`);
         }
     })
+
+    bot.onText(/note (.+) в (.+)/, function (msg, match) {
+        const userId = msg.from.id;
+        const text = match[1];
+        const time = match[2];
+
+        notes.push({ 'uid': userId, 'time': time, 'text': text });
+
+        bot.sendMessage(userId, 'Отлично! Я обязательно напомню вам °_°');
+    });
 
     bot.on('callback_query', async msg => {
         const data = msg.data;
