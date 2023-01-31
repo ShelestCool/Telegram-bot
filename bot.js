@@ -1,5 +1,6 @@
 const TelegramApi = require('node-telegram-bot-api');
-const { gameOptions, againOptions } = require('./options')
+const axios = require('axios');
+const {gameOptions, againOptions} = require('./options')
 const token = '5912123999:AAHaldtubyVLZ39sZ0pEAAdJYxPpofquflw';
 
 const bot = new TelegramApi(token, {polling: true});
@@ -16,12 +17,14 @@ const start = () => {
     bot.setMyCommands([
         {command: '/start', description: 'Начальное приветствие'},
         {command: '/info', description: 'Получить информацию о пользователе'},
-        {command: '/game', description: 'Уагадай число от 0 до 9'},
+        {command: '/game', description: 'Игра, угадай число'}
     ])
 
     bot.on('message', async msg => {
         const text = msg.text;
         const chatId = msg.chat.id;
+        const location = msg.location;
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=0aa3d31e641faaefacedb907d85686bf`;
 
         if (text === '/start') {
             await bot.sendSticker(chatId, 'https://tlgrm.eu/_/stickers/ccd/a8d/ccda8d5d-d492-4393-8bb7-e33f77c24907/1.webp');
@@ -35,7 +38,13 @@ const start = () => {
         if (text === '/game') {
             return startGame(chatId);
         }
-        return bot.sendMessage(chatId, 'Произошла какая то ошибочка ー_ー')
+
+        if (location) {
+            const response = await axios.get(url);
+            const data = response.data;
+            console.log(response);
+            await bot.sendMessage(chatId, `${data.name} (${data.sys.country}): ${Math.round(data.main.temp / 100)} C°`);
+        }
     })
 
     bot.on('callback_query', async msg => {
