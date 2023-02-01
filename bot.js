@@ -19,7 +19,7 @@ setInterval(async () => {
     for (let i = 0; i < notes.length; i++) {
         const curDate = new Date().getHours() + ':' + new Date().getMinutes();
         if (notes[i]['time'] === curDate) {
-            await bot.sendMessage(notes[i]['uid'], 'Напоминаю, что вы должны: '+ notes[i]['text'] + ' сейчас.');
+            await bot.sendMessage(notes[i]['uid'], 'Напоминаю, что вы должны: ' + notes[i]['text'] + ' сейчас.');
             notes.splice(i, 1);
         }
     }
@@ -39,7 +39,7 @@ const start = () => {
 
         if (text === '/start') {
             await bot.sendSticker(chatId, 'https://tlgrm.eu/_/stickers/ccd/a8d/ccda8d5d-d492-4393-8bb7-e33f77c24907/1.webp');
-            return bot.sendMessage(chatId, `Добро пожаловать в Trash Gang!`);
+            return bot.sendMessage(chatId, `Добро пожаловать, меня зовут Бот!`);
         }
 
         if (text === '/info') {
@@ -54,7 +54,7 @@ const start = () => {
             const url = `https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=0aa3d31e641faaefacedb907d85686bf`;
             const response = await axios.get(url);
             const data = response.data;
-            await bot.sendMessage(chatId, `${data.name} (${data.sys.country}): ${Math.round(data.main.temp / 100)} C°`);
+            await bot.sendMessage(chatId, `${data.name} (${data.sys.country}): ${Math.round(data.main.temp - 273.15)} C°. At the moment there are ${data.weather[0].main} outside, the wind speed is - ${data.wind.speed} km/h!`);
         }
     })
 
@@ -63,14 +63,13 @@ const start = () => {
         const text = match[1];
         const time = match[2];
 
-        notes.push({ 'uid': userId, 'time': time, 'text': text });
+        notes.push({'uid': userId, 'time': time, 'text': text});
 
         bot.sendMessage(userId, 'Отлично! Я обязательно напомню вам °_°');
     });
 
     bot.on('callback_query', async msg => {
         const data = msg.data;
-        console.log(data);
         const chatId = msg.message.chat.id;
 
         if (data === '/again') {
